@@ -6,6 +6,21 @@
 
 ---
 
+## 2026-09-03 — Nothing-Nothing-11 — Pages Actions Node 24 upgrade
+
+- **分支**：`chore/nothing-nothing-11-20260903-02-pages-actions-node24`
+- **关联业务 Commit**：
+  - `9704acb chore(deploy): upgrade Pages actions to Node 24`
+- **变更背景**：首次 Pages 发布成功，但 GitHub Actions 提示旧动作仍以 Node.js 20 为目标；官方最新主版本已迁移到 Node 24。
+- **主要改动**：升级 `actions/checkout` 至 v7、`actions/configure-pages` 至 v6、`actions/upload-pages-artifact` 至 v5；保留 `actions/deploy-pages` v5。
+- **影响范围**：仅影响 GitHub Pages CI 运行时，不改变站点内容。
+- **配置、环境变量或数据结构变化**：无。
+- **验证结果**：工作流 YAML 解析通过；四个 Actions 引用均为已核验的官方 Node 24 / composite 版本；`git diff --cached --check` 通过。
+- **已知风险**：官方动作主版本升级可能改变内部实现；将以实际 Pages 工作流和线上 HTTP 冒烟结果作为发布门槛。
+- **回滚方式**：回滚 Commit `9704acb`，恢复上一组 Actions 主版本，并删除本条更新记录。
+
+---
+
 ## 2026-09-03 — Nothing-Nothing-11 — GitHub Pages deployment
 
 - **分支**：`chore/nothing-nothing-11-20260903-01-github-pages`
