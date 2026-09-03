@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-09-03 — Nothing-Nothing-11 — GitHub Pages deployment
+
+- **分支**：`chore/nothing-nothing-11-20260903-01-github-pages`
+- **关联业务 Commit**：
+  - `d412b05 chore(deploy): add GitHub Pages workflow`
+- **变更背景**：将原私有仓库 `main` 的当前版本复制到新的公开仓库，并使用 GitHub 官方 Pages Actions 持续发布在线演示。
+- **主要改动**：
+  - 新增 GitHub Pages 工作流，保留 `app/`、`src/`、模型和第三方静态资源的既有相对路径。
+  - 新增站点根入口，将访问者跳转到 `app/login.html`。
+- **影响范围**：仅影响新仓库的 GitHub Pages 构建和发布；不修改会议业务逻辑、API 地址或数据结构。
+- **配置、环境变量或数据结构变化**：新增 Pages 工作流权限 `pages: write` 与 `id-token: write`；无运行时环境变量变化。
+- **验证结果**：
+  - `python` 解析 `.github/workflows/deploy-pages.yml`：通过。
+  - `node --check` 检查 35 个 JavaScript / MJS 文件：通过。
+  - 以真实项目子路径启动静态预览：站点根、登录页、登录模块与 ONNX 模型均返回 HTTP 200。
+  - `git diff --cached --check`：通过。
+- **已知风险**：GitHub Pages 仅托管静态文件，不能运行仓库中的可选 Node TTS 代理；生产使用前仍需验证浏览器权限、SenseAudio API 跨域策略和 API Key 管理方式。
+- **回滚方式**：回滚 Commit `d412b05`，关闭 GitHub Pages，并删除本条更新记录。
+
+---
+
 ## 2026-08-07 — Codex — collaboration guardrails
 
 - **分支**：`docs/codex-20260807-01-agent-rules`
