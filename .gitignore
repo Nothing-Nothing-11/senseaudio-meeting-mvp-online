@@ -1,0 +1,6 @@
+﻿.DS_Store
+.workbuddy/
+.vercel/
+node_modules/
+*.log
+.dbg/

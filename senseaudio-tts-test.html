@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SenseAudio TTS 语音合成测试</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a2e;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #888;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .key-row { display: flex; gap: 8px; }
+  .key-row input { flex: 1; }
+  .key-row button { white-space: nowrap; padding: 0 16px; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: #777;
+    margin-bottom: 4px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color .2s, box-shadow .2s;
+    background: #fafafa;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+    background: #fff;
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.6;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    margin-left: 6px;
+    font-weight: 500;
+  }
+  .tag-yes { background: #d1fae5; color: #065f46; }
+  .tag-no  { background: #fee2e2; color: #991b1b; }
+  .tag-info { background: #dbeafe; color: #1e40af; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-primary { background: #4f46e5; color: #fff; width: 100%; }
+  .btn-primary:hover { background: #4338ca; }
+  .btn-primary:disabled { background: #c7d2fe; cursor: not-allowed; }
+  .btn-outline { background: #fff; color: #4f46e5; border: 1px solid #4f46e5; }
+  .btn-outline:hover { background: #f5f3ff; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  .lang-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .lang-chip {
+    font-size: 12px;
+    padding: 5px 10px;
+    border: 1px solid #d9d9d9;
+    border-radius: 99px;
+    background: #fff;
+    cursor: pointer;
+    transition: all .15s;
+    user-select: none;
+  }
+  .lang-chip:hover { border-color: #4f46e5; background: #f5f3ff; }
+  .lang-chip.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+
+  .range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .range-row input[type="range"] { flex: 1; padding: 0; }
+  .range-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4f46e5;
+    min-width: 42px;
+    text-align: right;
+  }
+
+  .switch-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg {
+    background: #fef2f2;
+    color: #991b1b;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    border: 1px solid #fecaca;
+    white-space: pre-wrap;
+  }
+
+  .latency-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #555;
+    padding: 10px 14px;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .latency-value { font-weight: 700; font-size: 18px; color: #4f46e5; }
+  .latency-good { color: #059669 !important; }
+  .latency-warn { color: #d97706 !important; }
+  .latency-slow { color: #dc2626 !important; }
+
+  audio { width: 100%; margin-top: 8px; }
+
+  .meta-panel {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 12px 14px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 260px;
+    overflow-y: auto;
+    margin-top: 8px;
+  }
+
+  .voice-desc {
+    font-size: 11px;
+    color: #999;
+    margin-top: 4px;
+    min-height: 15px;
+  }
+
+  .hidden { display: none !important; }
+  .model-hint { font-size: 11px; color: #999; margin-top: 4px; }
+
+  .matrix-progress {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4f46e5;
+    padding: 8px 0;
+  }
+  .matrix-results { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .matrix-item {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #fafafa;
+  }
+  .matrix-item.ok { border-color: #a7f3d0; background: #f0fdf9; }
+  .matrix-item.fail { border-color: #fecaca; background: #fef2f2; }
+  .matrix-item-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  }
+  .matrix-voice-name { font-size: 13px; font-weight: 600; color: #333; }
+  .matrix-voice-id { font-size: 11px; color: #999; font-family: ui-monospace, monospace; }
+  .matrix-status { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+  .matrix-status.ok { background: #d1fae5; color: #065f46; }
+  .matrix-status.fail { background: #fee2e2; color: #991b1b; }
+  .matrix-status.pending { background: #e5e7eb; color: #6b7280; }
+  .matrix-item audio { margin-top: 8px; }
+  .matrix-err { font-size: 12px; color: #991b1b; margin-top: 4px; white-space: pre-wrap; }
+  .matrix-desc { font-size: 11px; color: #888; margin-top: 2px; }
+
+  @media (max-width: 540px) {
+    .row, .row-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div>
+    <h1>SenseAudio TTS 语音合成测试</h1>
+    <p class="subtitle">小语种合成效果验证 · 流式 (SSE) / 非流式 · /v1/t2a_v2</p>
+  </div>
+
+  <!-- API Key -->
+  <div class="card">
+    <div class="card-title">API Key</div>
+    <div class="key-row">
+      <input type="password" id="apiKey" placeholder="输入你的 SenseAudio API Key">
+      <button class="btn btn-outline btn-sm" onclick="toggleKey()" id="toggleKeyBtn">显示</button>
+    </div>
+  </div>
+
+  <!-- 音色 -->
+  <div class="card">
+    <div class="card-title">
+      音色 (voice_id)
+      <button class="btn btn-outline btn-sm" onclick="fetchVoices()" id="fetchVoiceBtn">拉取可用音色</button>
+    </div>
+    <div class="row">
+      <div>
+        <label for="voiceSelect">选择音色</label>
+        <select id="voiceSelect" onchange="onVoicePicked()">
+          <option value="female_0033_b">female_0033_b（示例）</option>
+          <option value="male_0004_a">male_0004_a（示例）</option>
+        </select>
+        <div class="voice-desc" id="voiceDesc"></div>
+      </div>
+      <div>
+        <label for="voiceIdManual">或手动输入 voice_id</label>
+        <input type="text" id="voiceIdManual" placeholder="覆盖上方下拉选择">
+        <div class="model-hint">手填后以此为准，留空则用下拉值</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 文本 -->
+  <div class="card">
+    <div class="card-title">合成文本</div>
+    <div class="lang-chips" id="langChips"></div>
+    <textarea id="ttsText" placeholder="输入要合成的文本，或点击上方语种标签载入样例...">你好，这是来自 SenseAudio 的第一条语音</textarea>
+    <div class="model-hint">最大 10000 字符，支持 &lt;break time=500&gt; 停顿符（单位 ms，最小 100）</div>
+  </div>
+
+  <!-- 参数 -->
+  <div class="card">
+    <div class="card-title">合成参数</div>
+    <div class="row-3">
+      <div>
+        <label>语速 speed [0.5–2.0]</label>
+        <div class="range-row">
+          <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1" oninput="syncRange('speed')">
+          <span class="range-val" id="speedVal">1.0</span>
+        </div>
+      </div>
+      <div>
+        <label>音量 vol [0.01–10]</label>
+        <div class="range-row">
+          <input type="range" id="vol" min="0.1" max="10" step="0.1" value="1" oninput="syncRange('vol')">
+          <span class="range-val" id="volVal">1.0</span>
+        </div>
+      </div>
+      <div>
+        <label>音调 pitch [-12–12]</label>
+        <div class="range-row">
+          <input type="range" id="pitch" min="-12" max="12" step="1" value="0" oninput="syncRange('pitch')">
+          <span class="range-val" id="pitchVal">0</span>
+        </div>
+      </div>
+    </div>
+    <div class="row-3" style="margin-top:12px">
+      <div>
+        <label for="format">格式 format</label>
+        <select id="format">
+          <option value="mp3">mp3</option>
+          <option value="wav">wav</option>
+          <option value="flac">flac</option>
+          <option value="pcm">pcm</option>
+        </select>
+      </div>
+      <div>
+        <label for="sampleRate">采样率 sample_rate</label>
+        <select id="sampleRate">
+          <option value="8000">8000</option>
+          <option value="16000">16000</option>
+          <option value="22050">22050</option>
+          <option value="24000">24000</option>
+          <option value="32000" selected>32000</option>
+          <option value="44100">44100</option>
+        </select>
+      </div>
+      <div>
+        <label for="bitrate">比特率 bitrate</label>
+        <select id="bitrate">
+          <option value="32000">32000</option>
+          <option value="64000">64000</option>
+          <option value="128000" selected>128000</option>
+          <option value="256000">256000</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:14px; display:flex; gap:20px; flex-wrap:wrap">
+      <label class="switch-row">
+        <input type="checkbox" id="streamMode" checked style="width:auto"> 流式模式 (SSE)
+      </label>
+      <label class="switch-row">
+        <input type="checkbox" id="useProxy" style="width:auto"> 使用本地代理 (CORS 兜底)
+      </label>
+    </div>
+    <div class="model-hint" id="proxyHint">直连 api.senseaudio.cn；若浏览器报 CORS，勾选代理并运行 tts-proxy.js</div>
+  </div>
+
+  <!-- 合成按钮 -->
+  <button class="btn btn-primary" id="synthBtn" onclick="synthesize()" disabled>
+    开始合成
+  </button>
+
+  <!-- 矩阵测试 -->
+  <div class="card">
+    <div class="card-title">
+      矩阵测试（当前文本 × 所有音色）
+      <button class="btn btn-outline btn-sm" onclick="runMatrix()" id="matrixBtn" disabled>测所有音色</button>
+    </div>
+    <div class="model-hint" id="matrixHint">
+      先「拉取可用音色」→ 选好语种样例/文本 → 点「测所有音色」。用当前文本逐个音色合成，横向对比哪个音色能读该语种。<br>
+      按字符计费；建议先用短文本。默认串行以免限流；成功项可直接播放。
+    </div>
+    <div class="matrix-progress hidden" id="matrixProgress"></div>
+    <div class="matrix-results" id="matrixResults"></div>
+  </div>
+
+  <!-- 时延 -->
+  <div class="latency-bar hidden" id="latencyBar">
+    <span>⏱ 首包/总时延：</span>
+    <span class="latency-value" id="latencyValue">-- ms</span>
+    <span style="font-size:11px;color:#999" id="latencyDetail"></span>
+  </div>
+
+  <!-- 输出 -->
+  <div class="card">
+    <div class="card-title">合成结果</div>
+    <div class="error-msg hidden" id="errorMsg"></div>
+    <div id="playerWrap" class="hidden">
+      <audio id="player" controls></audio>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="downloadAudio()">下载音频</button>
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <div class="card-title" style="font-size:12px;margin-bottom:6px">原始响应 (extra_info / base_resp / trace_id)</div>
+      <div class="meta-panel" id="metaPanel">尚未合成</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ 语种样例（复用 ASR 支持清单作为测试输入）============
+// 来源：senseaudio-test.html 的 ALL_LANGUAGES。TTS 文档未列语种，
+// 此处作为“测试输入样例”，实际是否支持以合成结果为准。
+const LANG_SAMPLES = [
+  { code: 'zh',  name: '中文',       text: '你好，这是一条中文语音合成测试。' },
+  { code: 'en',  name: '英文',       text: 'Hello, this is an English text-to-speech test.' },
+  { code: 'yue', name: '粤语',       text: '你好，呢個係一段粵語語音合成測試。' },
+  { code: 'ja',  name: '日文',       text: 'こんにちは、これは日本語の音声合成テストです。' },
+  { code: 'ko',  name: '韩文',       text: '안녕하세요, 이것은 한국어 음성 합성 테스트입니다.' },
+  { code: 'th',  name: '泰语',       text: 'สวัสดีครับ นี่คือการทดสอบการสังเคราะห์เสียงภาษาไทย' },
+  { code: 'vi',  name: '越南语',     text: 'Xin chào, đây là bài kiểm tra tổng hợp giọng nói tiếng Việt.' },
+  { code: 'id',  name: '印尼语',     text: 'Halo, ini adalah tes text-to-speech dalam bahasa Indonesia.' },
+  { code: 'ms',  name: '马来语',     text: 'Helo, ini ialah ujian text-to-speech dalam bahasa Melayu.' },
+  { code: 'ar',  name: '阿拉伯语',   text: 'مرحبا، هذا اختبار لتحويل النص إلى كلام باللغة العربية.' },
+  { code: 'ur',  name: '乌尔都语',   text: 'ہیلو، یہ اردو میں ٹیکسٹ ٹو اسپیچ کا امتحان ہے۔' },
+  { code: 'ru',  name: '俄语',       text: 'Здравствуйте, это тест синтеза речи на русском языке.' },
+  { code: 'fr',  name: '法语',       text: 'Bonjour, ceci est un test de synthèse vocale en français.' },
+  { code: 'de',  name: '德语',       text: 'Hallo, dies ist ein Sprachsynthese-Test auf Deutsch.' },
+  { code: 'es',  name: '西班牙语',   text: 'Hola, esta es una prueba de síntesis de voz en español.' },
+  { code: 'pt',  name: '葡萄牙语',   text: 'Olá, este é um teste de síntese de fala em português.' },
+  { code: 'it',  name: '意大利语',   text: 'Ciao, questo è un test di sintesi vocale in italiano.' },
+  { code: 'nl',  name: '荷兰语',     text: 'Hallo, dit is een spraaksynthesetest in het Nederlands.' },
+  { code: 'tr',  name: '土耳其语',   text: 'Merhaba, bu Türkçe bir metin okuma testidir.' },
+];
+
+const DIRECT_BASE = 'https://api.senseaudio.cn';
+const PROXY_BASE  = 'http://localhost:8787';
+const MODEL = 'senseaudio-tts-1.5-260319';
+
+let lastAudioBlob = null;
+let lastFormat = 'mp3';
+let allVoices = [];  // 矩阵测试用：{voice_id, voice_name, desc, group}
+
+// ============ 初始化语种标签 ============
+const chipsWrap = document.getElementById('langChips');
+LANG_SAMPLES.forEach((l, i) => {
+  const chip = document.createElement('span');
+  chip.className = 'lang-chip';
+  chip.textContent = l.name;
+  chip.dataset.idx = i;
+  chip.onclick = () => {
+    document.getElementById('ttsText').value = l.text;
+    document.querySelectorAll('.lang-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  };
+  chipsWrap.appendChild(chip);
+});
+
+// ============ API Key 记忆 ============
+const KEY_STORE = 'tts-test-apikey';
+const savedKey = localStorage.getItem(KEY_STORE);
+if (savedKey) document.getElementById('apiKey').value = savedKey;
+
+document.getElementById('apiKey').addEventListener('input', (e) => {
+  localStorage.setItem(KEY_STORE, e.target.value.trim());
+  updateSynthBtn();
+});
+
+let keyVisible = false;
+function toggleKey() {
+  keyVisible = !keyVisible;
+  const inp = document.getElementById('apiKey');
+  inp.type = keyVisible ? 'text' : 'password';
+  document.getElementById('toggleKeyBtn').textContent = keyVisible ? '隐藏' : '显示';
+}
+
+// ============ 参数滑块 ============
+function syncRange(id) {
+  const v = document.getElementById(id).value;
+  document.getElementById(id + 'Val').textContent =
+    (id === 'pitch') ? v : parseFloat(v).toFixed(1);
+}
+
+// ============ 代理开关提示 ============
+document.getElementById('useProxy').addEventListener('change', (e) => {
+  const hint = document.getElementById('proxyHint');
+  hint.textContent = e.target.checked
+    ? `经由本地代理 ${PROXY_BASE}（需先运行 node tts-proxy.js）`
+    : '直连 api.senseaudio.cn；若浏览器报 CORS，勾选代理并运行 tts-proxy.js';
+});
+
+function apiBase() {
+  return document.getElementById('useProxy').checked ? PROXY_BASE : DIRECT_BASE;
+}
+
+// ============ 拉取音色 ============
+async function fetchVoices() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { showError('请先填写 API Key'); return; }
+
+  const btn = document.getElementById('fetchVoiceBtn');
+  btn.disabled = true;
+  btn.textContent = '拉取中...';
+
+  try {
+    const resp = await fetch(`${apiBase()}/v1/get_voice`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ voice_type: 'all' })
+    });
+    const data = await resp.json();
+
+    if (!resp.ok || (data.base_resp && data.base_resp.status_code !== 0)) {
+      const msg = (data.base_resp && data.base_resp.status_msg) || data.message || `HTTP ${resp.status}`;
+      showError('拉取音色失败：' + msg);
+      return;
+    }
+
+    const groups = [
+      ['系统音色', data.system_voice],
+      ['克隆音色', data.voice_cloning],
+      ['文生音色', data.voice_generation],
+    ];
+    const sel = document.getElementById('voiceSelect');
+    sel.innerHTML = '';
+    let count = 0;
+    allVoices = [];
+
+    groups.forEach(([label, arr]) => {
+      if (!Array.isArray(arr) || arr.length === 0) return;
+      const og = document.createElement('optgroup');
+      og.label = label;
+      arr.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.voice_id;
+        const desc = Array.isArray(v.description) ? v.description.join(' / ') : '';
+        opt.textContent = `${v.voice_name || v.voice_id}${desc ? ' · ' + desc : ''}`;
+        opt.dataset.desc = desc;
+        og.appendChild(opt);
+        allVoices.push({ voice_id: v.voice_id, voice_name: v.voice_name || v.voice_id, desc, group: label });
+        count++;
+      });
+      sel.appendChild(og);
+    });
+
+    if (count === 0) {
+      showError('接口返回成功，但音色列表为空');
+    } else {
+      clearError();
+      onVoicePicked();
+      document.getElementById('matrixBtn').disabled = false;
+      document.getElementById('metaPanel').textContent =
+        `已拉取 ${count} 个音色。\n提示：description 字段可能标注语言，用于判断小语种支持。\n可用下方“矩阵测试”对当前文本逐个音色合成，横向对比。`;
+    }
+  } catch (err) {
+    showError('拉取音色网络失败：' + err.message +
+      '\n若是 CORS，勾选“使用本地代理”并运行 node tts-proxy.js');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '拉取可用音色';
+  }
+}
+
+function onVoicePicked() {
+  const sel = document.getElementById('voiceSelect');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('voiceDesc').textContent =
+    (opt && opt.dataset.desc) ? '语言/描述：' + opt.dataset.desc : '';
+}
+
+function currentVoiceId() {
+  const manual = document.getElementById('voiceIdManual').value.trim();
+  if (manual) return manual;
+  return document.getElementById('voiceSelect').value;
+}
+
+// ============ 提交按钮状态 ============
+function updateSynthBtn() {
+  const hasKey = document.getElementById('apiKey').value.trim().length > 0;
+  const hasText = document.getElementById('ttsText').value.trim().length > 0;
+  document.getElementById('synthBtn').disabled = !(hasKey && hasText);
+}
+document.getElementById('ttsText').addEventListener('input', updateSynthBtn);
+updateSynthBtn();
+
+// ============ hex -> Uint8Array ============
+function hexToBytes(hex) {
+  const len = hex.length >> 1;
+  const out = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    out[i] = parseInt(hex.substr(i << 1, 2), 16);
+  }
+  return out;
+}
+
+function mimeFor(fmt) {
+  switch (fmt) {
+    case 'mp3': return 'audio/mpeg';
+    case 'wav': return 'audio/wav';
+    case 'flac': return 'audio/flac';
+    case 'pcm': return 'audio/L16';
+    default: return 'application/octet-stream';
+  }
+}
+
+// ============ 单次合成核心（供主流程与矩阵测试复用）============
+// 返回 { ok, merged, extraInfo, traceId, baseResp, error, firstByteMs, totalMs }
+async function synthOnce(payload, apiKey, isStream) {
+  const t0 = performance.now();
+  let firstByteAt = null;
+
+  const resp = await fetch(`${apiBase()}/v1/t2a_v2`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!resp.ok) {
+    let msg = `HTTP ${resp.status}`;
+    try { const e = await resp.json(); msg = (e.base_resp && e.base_resp.status_msg) || e.message || msg; } catch {}
+    return { ok: false, error: msg };
+  }
+
+  let bytesParts = [];
+  let extraInfo = null, traceId = null, baseResp = null;
+
+  if (isStream) {
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (firstByteAt === null) firstByteAt = performance.now();
+      buf += decoder.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf('\n')) >= 0) {
+        let line = buf.slice(0, idx);
+        buf = buf.slice(idx + 1);
+        line = line.replace(/\r$/, '').trim();
+        if (!line || !line.startsWith('data:')) continue;
+        const jsonStr = line.slice(5).trim();
+        if (!jsonStr || jsonStr === '[DONE]') continue;
+        let chunk;
+        try { chunk = JSON.parse(jsonStr); } catch { continue; }
+        if (chunk.data && chunk.data.audio) bytesParts.push(hexToBytes(chunk.data.audio));
+        if (chunk.extra_info) extraInfo = chunk.extra_info;
+        if (chunk.trace_id) traceId = chunk.trace_id;
+        if (chunk.base_resp) baseResp = chunk.base_resp;
+      }
+    }
+  } else {
+    const data = await resp.json();
+    firstByteAt = performance.now();
+    if (data.base_resp && data.base_resp.status_code !== 0) {
+      return { ok: false, error: data.base_resp.status_msg || '未知错误', baseResp: data.base_resp };
+    }
+    if (data.data && data.data.audio) bytesParts.push(hexToBytes(data.data.audio));
+    extraInfo = data.extra_info || null;
+    traceId = data.trace_id || null;
+    baseResp = data.base_resp || null;
+  }
+
+  const totalLen = bytesParts.reduce((n, p) => n + p.length, 0);
+  const tEnd = performance.now();
+  if (totalLen === 0) {
+    return { ok: false, error: '未收到音频数据（audio 为空）', extraInfo, traceId, baseResp };
+  }
+  const merged = new Uint8Array(totalLen);
+  let off = 0;
+  for (const p of bytesParts) { merged.set(p, off); off += p.length; }
+
+  return {
+    ok: true, merged, extraInfo, traceId, baseResp,
+    firstByteMs: Math.round((firstByteAt ?? tEnd) - t0),
+    totalMs: Math.round(tEnd - t0),
+  };
+}
+
+function buildPayload(text, voiceId, isStream) {
+  return {
+    model: MODEL,
+    text,
+    stream: isStream,
+    voice_setting: {
+      voice_id: voiceId,
+      speed: parseFloat(document.getElementById('speed').value),
+      vol: parseFloat(document.getElementById('vol').value),
+      pitch: parseInt(document.getElementById('pitch').value, 10),
+    },
+    audio_setting: {
+      format: document.getElementById('format').value,
+      sample_rate: parseInt(document.getElementById('sampleRate').value, 10),
+      bitrate: parseInt(document.getElementById('bitrate').value, 10),
+      channel: 2,
+    },
+  };
+}
+
+// ============ 合成主流程 ============
+async function synthesize() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const text = document.getElementById('ttsText').value.trim();
+  const voiceId = currentVoiceId();
+  const isStream = document.getElementById('streamMode').checked;
+  const format = document.getElementById('format').value;
+  lastFormat = format;
+
+  clearError();
+  document.getElementById('playerWrap').classList.add('hidden');
+  document.getElementById('latencyBar').classList.add('hidden');
+  document.getElementById('metaPanel').textContent = '合成中...';
+
+  const payload = buildPayload(text, voiceId, isStream);
+
+  const btn = document.getElementById('synthBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span> 合成中...';
+
+  try {
+    const r = await synthOnce(payload, apiKey, isStream);
+    if (!r.ok) {
+      showError('合成失败：' + r.error);
+      renderMeta(r.extraInfo, r.baseResp, r.traceId, 0);
+      return;
+    }
+
+    lastAudioBlob = new Blob([r.merged], { type: mimeFor(format) });
+    const url = URL.createObjectURL(lastAudioBlob);
+    const player = document.getElementById('player');
+    player.src = url;
+    document.getElementById('playerWrap').classList.remove('hidden');
+
+    showLatency(r.firstByteMs, r.totalMs, isStream, r.extraInfo);
+    renderMeta(r.extraInfo, r.baseResp, r.traceId, r.merged.length);
+
+  } catch (err) {
+    showError('网络请求失败：' + err.message +
+      '\n可能是 CORS：勾选“使用本地代理”，并在项目目录运行 node tts-proxy.js');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '开始合成';
+    updateSynthBtn();
+  }
+}
+
+function renderMeta(extraInfo, baseResp, traceId, bytes) {
+  const lines = [];
+  lines.push('audio_bytes: ' + bytes);
+  if (traceId) lines.push('trace_id: ' + traceId);
+  if (baseResp) lines.push('base_resp: ' + JSON.stringify(baseResp));
+  if (extraInfo) lines.push('extra_info: ' + JSON.stringify(extraInfo, null, 2));
+  document.getElementById('metaPanel').textContent = lines.join('\n') || '(无元数据)';
+}
+
+function showLatency(firstMs, totalMs, isStream, extraInfo) {
+  const bar = document.getElementById('latencyBar');
+  const val = document.getElementById('latencyValue');
+  const detail = document.getElementById('latencyDetail');
+  bar.classList.remove('hidden');
+
+  const shown = isStream ? firstMs : totalMs;
+  val.textContent = shown + ' ms';
+  val.className = 'latency-value';
+  if (shown < 800) val.classList.add('latency-good');
+  else if (shown < 2500) val.classList.add('latency-warn');
+  else val.classList.add('latency-slow');
+
+  const dur = extraInfo && extraInfo.audio_length ? `音频 ${extraInfo.audio_length}ms` : '';
+  detail.textContent = isStream
+    ? `首包时延 · 总耗时 ${totalMs}ms ${dur}`
+    : `总耗时 ${dur}`;
+}
+
+function downloadAudio() {
+  if (!lastAudioBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(lastAudioBlob);
+  a.download = `tts_output.${lastFormat}`;
+  a.click();
+}
+
+// ============ 矩阵测试：当前文本 × 所有音色 ============
+let matrixRunning = false;
+function runMatrix() {
+  if (matrixRunning) { matrixRunning = false; return; }  // 再次点击 = 中止
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const text = document.getElementById('ttsText').value.trim();
+  if (!apiKey) { showError('请先填写 API Key'); return; }
+  if (!text) { showError('请先输入合成文本'); return; }
+  if (allVoices.length === 0) { showError('请先「拉取可用音色」'); return; }
+
+  const isStream = document.getElementById('streamMode').checked;
+  const format = document.getElementById('format').value;
+  const results = document.getElementById('matrixResults');
+  const progress = document.getElementById('matrixProgress');
+  const btn = document.getElementById('matrixBtn');
+  results.innerHTML = '';
+  progress.classList.remove('hidden');
+
+  const rows = allVoices.map(v => {
+    const el = document.createElement('div');
+    el.className = 'matrix-item';
+    el.innerHTML = `
+      <div class="matrix-item-head">
+        <div>
+          <span class="matrix-voice-name">${escapeHtml(v.voice_name)}</span>
+          <span class="matrix-voice-id">${escapeHtml(v.voice_id)}</span>
+        </div>
+        <span class="matrix-status pending">等待</span>
+      </div>
+      ${v.desc ? `<div class="matrix-desc">${escapeHtml(v.desc)}</div>` : ''}`;
+    results.appendChild(el);
+    return el;
+  });
+
+  matrixRunning = true;
+  btn.textContent = '中止测试';
+  let ok = 0, fail = 0, done = 0;
+
+  (async () => {
+    for (let i = 0; i < allVoices.length; i++) {
+      if (!matrixRunning) break;
+      const v = allVoices[i];
+      const row = rows[i];
+      const statusEl = row.querySelector('.matrix-status');
+      statusEl.className = 'matrix-status pending';
+      statusEl.textContent = '合成中';
+      progress.textContent = `进度 ${done}/${allVoices.length} · 成功 ${ok} · 失败 ${fail} · 正在测 ${v.voice_name}`;
+
+      try {
+        const r = await synthOnce(buildPayload(text, v.voice_id, isStream), apiKey, isStream);
+        done++;
+        if (r.ok) {
+          ok++;
+          row.classList.add('ok');
+          statusEl.className = 'matrix-status ok';
+          statusEl.textContent = `成功 ${r.merged.length}B`;
+          const blob = new Blob([r.merged], { type: mimeFor(format) });
+          const audio = document.createElement('audio');
+          audio.controls = true;
+          audio.src = URL.createObjectURL(blob);
+          row.appendChild(audio);
+        } else {
+          fail++;
+          row.classList.add('fail');
+          statusEl.className = 'matrix-status fail';
+          statusEl.textContent = '失败';
+          const err = document.createElement('div');
+          err.className = 'matrix-err';
+          err.textContent = r.error || '未知错误';
+          row.appendChild(err);
+        }
+      } catch (e) {
+        done++; fail++;
+        row.classList.add('fail');
+        statusEl.className = 'matrix-status fail';
+        statusEl.textContent = '异常';
+        const err = document.createElement('div');
+        err.className = 'matrix-err';
+        err.textContent = e.message;
+        row.appendChild(err);
+      }
+    }
+    const aborted = !matrixRunning;
+    matrixRunning = false;
+    btn.textContent = '测所有音色';
+    progress.textContent = `${aborted ? '已中止' : '完成'} · 共 ${done}/${allVoices.length} · 成功 ${ok} · 失败 ${fail}`;
+  })();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function showError(msg) {
+  const e = document.getElementById('errorMsg');
+  e.classList.remove('hidden');
+  e.textContent = msg;
+}
+function clearError() {
+  document.getElementById('errorMsg').classList.add('hidden');
+}
+</script>
+</body>
+</html>
